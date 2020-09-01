@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
+MYDIR=`dirname "$(realpath $0)"`
+
+OUT="/root/seafile/sync"
+KSDIR="${MYDIR}/ks"
 
 version="1.0.0"   # Version of this script
-OUT="/root/seafile/sync"
 
 ###############################################################################
 # 
@@ -19,7 +22,6 @@ OUT="/root/seafile/sync"
 ###############################################################################
 function get_iso () {
   CURDIR=`pwd`
-  MYDIR=`dirname "$(realpath $0)"`
   cd ${tmpDir}
 
   ISOURL="http://isoredirect.centos.org/centos/${CENTOSVERSION}/isos/x86_64/${NAME}"
@@ -40,7 +42,7 @@ function get_iso () {
   fi
 
   info "Now calling createiso.sh to create custom iso out of it"
-  ${MYDIR}/createiso.sh ${tmpDir}/${NAME} ${MYDIR}/ks/minimal-${CENTOSVERSION}.ks.cfg ${OUT}
+  ${MYDIR}/createiso.sh ${tmpDir}/${NAME} ${KSDIR}/minimal-${CENTOSVERSION}.ks.cfg ${OUT}
 
   rm ${tmpDir}/${NAME}
   cd ${CURDIR}
