@@ -40,6 +40,7 @@ function mainScript() {
   SRC=${tmpDir}/upstreamiso
   DST=${tmpDir}/customiso
   EFI=${tmpDir}/efi
+  NAME=$(basename $1)
 
   info "Creating directory ${SRC}"
   mkdir ${SRC}
