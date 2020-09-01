@@ -90,8 +90,8 @@ function mainScript() {
   cd ${DST}
   #mkisofs -o ${OUT}/Custom-${NAME} -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -V "${VOLUMENAME}" -R -J  -quiet -T isolinux/. . > /dev/null
   genisoimage \
-      -V ${VOLUMENAME} \
-      -A ${VOLUMENAME} \
+      -V "${VOLUMENAME}" \
+      -A "${VOLUMENAME}" \
       -o ${OUT}/Custom-${NAME} \
       -joliet-long \
       -b isolinux/isolinux.bin \
@@ -101,7 +101,7 @@ function mainScript() {
       -boot-info-table \
       -input-charset UTF8 \
       -eltorito-alt-boot -e images/efiboot.img \
-      -R -J -v -v -T ${DST}
+      -R -J -T ${DST} > /dev/null
 
   cd ${CURDIR}
   isohybrid --uefi ${OUT}/Custom-${NAME}
