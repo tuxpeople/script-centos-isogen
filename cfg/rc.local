@@ -1,0 +1,9 @@
+#!/bin/bash
+# Put custom instructions in the script. Keep copy of previous rc.local in /etc/rc.d/rc.local-backup to replace after booting
+
+# Please note that you must run 'chmod +x /etc/rc.d/rc.local' to ensure
+# that this script will be executed during boot.
+
+/bin/ansible-playbook -i /root/ansible/localhost /root/ansible/bootstrap.yml -vvvv > /root/ansible-run.log
+mv /etc/rc.d/rc.local-backup /etc/rc.d/rc.local
+
