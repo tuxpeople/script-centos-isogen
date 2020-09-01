@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
 version="1.0.0"   # Version of this script
-DESTINATIONDIR="/root/seafile/sync/"
-KSDIR="/root/git/isogen/ks"
 
 ###############################################################################
 # 
@@ -19,102 +17,97 @@ KSDIR="/root/git/isogen/ks"
 # Here comes the code :-)
 ###############################################################################
 function mainScript() {
-  if [ "${cversion}" == "all" ]; then
-      dl_7
-      dl_8
-      dl_8stream
-  fi
+  # Do some tests on the arguments
+  [ -z "${1}" ] && usage
+  [ -z "${2}" ] && die "Not enought arguments"
+  [ -z "${3}" ] && die "Not enought arguments"
+  [ ! -f ${1} ] && die "Specified ISO image ${1} not found."
+  [ ! -f ${2} ] && die "Specified kickstart file ${2} does not exist."
+  [ ! -d ${3} ] && die "Specified output directory ${3} does not exist."
 
-  if [ "${cversion}" == "7" ]; then
-    dl_7
-  fi
+  notice "Using ISO ${1} and kickstart ${2} to create a customized ISO in ${3}."
 
-  if [ "${cversion}" == "8" ]; then
-      dl_8
-  fi
-
-  if [ "${cversion}" == "8-stream" ]; then
-      dl_8stream
-  fi
-}
-
-function dl_7 () {
-    VERSION7="$(curl -s -L http://isoredirect.centos.org/centos/7/isos/x86_64/ | grep NetInstall | grep 'iso"' | sed -e 's/.*-NetInstall-\(.*\)\.iso.*/\1/')"
-    NAME="CentOS-7-x86_64-NetInstall-${VERSION7}.iso"
-    CENTOSVERSION="7"
-    generate_iso
-}
-
-function dl_8 () {
-    VERSION8="$(curl -s -L http://isoredirect.centos.org/centos/8/isos/x86_64/ | grep 'boot.iso"' | sed -e 's/.*CentOS-\(.*\)-x86_64.*/\1/')"
-    NAME="CentOS-${VERSION8}-x86_64-boot.iso"
-    CENTOSVERSION="8"
-    generate_iso
-}
-
-function dl_8stream () {
-    STREAMVERSION="$(curl -s -L http://isoredirect.centos.org/centos/8-stream/isos/x86_64/ | grep 'boot.iso"' | sed -e 's/.*x86_64-\(.*\)-boot.*/\1/')"
-    NAME="CentOS-Stream-8-x86_64-${STREAMVERSION}-boot.iso"
-    CENTOSVERSION="8-stream"
-    generate_iso
-}
-
-function generate_iso () {
-  notice "Starting process for Centos ${CENTOSVERSION}."
+  # check if we have 1G free in /tmp and change into tmpDir
   minfree=1232896
   checkfree /tmp
-
   CURDIR=`pwd`
-  [ -d ${tmpDir} ] || mkdir ${tmpDir}
   cd ${tmpDir}
 
-  ISOURL="http://isoredirect.centos.org/centos/${CENTOSVERSION}/isos/x86_64/${NAME}"
-  info "Downloading upstream iso"
-  wget ${ISOURL} -q -O ${tmpDir}/${NAME}
-  VOLUMENAME=$(file -s ${tmpDir}/${NAME} | cut -d"'" -f2)
+  VOLUMENAME=$(file -s ${1} | cut -d"'" -f2)
+  UPSTREAMISO=${1}
+  KICKSTART=${2}
+  OUT=${3}
+  SRC=${tmpDir}/upstreamiso
+  DST=${tmpDir}/customiso
+  EFI=${tmpDir}/efi
 
-  info "Checking Checksum"
-  if [ ${CENTOSVERSION} == "7" ]; then
-    wget http://linuxsoft.cern.ch/centos/${CENTOSVERSION}/isos/x86_64/sha256sum.txt -q -O - | grep ${NAME} > ${tmpDir}/sha256sum.txt
-  else
-    wget http://linuxsoft.cern.ch/centos/${CENTOSVERSION}/isos/x86_64/CHECKSUM -q -O - | grep ${NAME} > ${tmpDir}/sha256sum.txt
-  fi
+  info "Creating directory ${SRC}"
+  mkdir ${SRC}
 
-  cd ${tmpDir}
-  if sha256sum -c sha256sum.txt; then
-    info "File correctly downloaded"
-  else
-    cd ${CURDIR}
-    die "${NAME} not correctly downloaded."
-  fi
-  cd ${tmpDir}
+  info "Mounting upstream iso ${UPSTREAMISO} to ${SRC}"
+  mount -o loop ${UPSTREAMISO} ${SRC}
 
-  info "Mounting upstream iso"
-  mkdir ${tmpDir}/upstreamiso
-  mount -o loop ${tmpDir}/${NAME} ${tmpDir}/upstreamiso
+  info "Creating directory ${DST}"
+  mkdir ${DST}
 
-  info "Copy iso content"
-  mkdir ${tmpDir}/customiso
-  cp -r ${tmpDir}/upstreamiso/* ${tmpDir}/customiso
-  umount ${tmpDir}/upstreamiso && rmdir ${tmpDir}/upstreamiso
-  chmod -R u+w ${tmpDir}/customiso
+  info "Copy iso content from ${SRC} to ${DST}"
+  cp -r ${SRC}/* ${DST}
 
-  info "Copy kickstart"
-#  cp ${KSDIR}/minimal-generic.ks ${tmpDir}/customiso/isolinux/ks.cfg
-  cp ${KSDIR}/minimal-${CENTOSVERSION}.ks.cfg ${tmpDir}/customiso/isolinux/ks.cfg
-  sed -i 's/append\ initrd\=initrd.img/append initrd=initrd.img\ ks\=cdrom:\/ks.cfg/' ${tmpDir}/customiso/isolinux/isolinux.cfg
+  info "Unmount upstream ISO ${UPSTREAMISO} and removing directory ${SRC}"
+  umount ${SRC} && rmdir ${SRC}
+  chmod -R u+w ${DST}
+
+  info "Creating directory ${EFI}"
+  mkdir ${EFI}
+
+  info "Make efiboot image read-write"
+  chmod 644 $DST/images/efiboot.img
+
+  info "Mounting efiboot image to ${EFI}"
+  mount -o loop $DST/images/efiboot.img ${EFI}
+
+  info "Adding kickstart to efiboot boot menu"
+  LABEL=$(grep "inst.stage2" ${EFI}/EFI/BOOT/grub.cfg | tail -1 | cut -d'=' -f3 |  cut -d' ' -f1 | sed 's/x2/\\x2/g')
+  KICKSTARTCFG="inst.ks=hd:LABEL=${LABEL}:/isolinux/ks.cfg"
+  sed -i 's|vmlinuz|vmlinuz '$KICKSTARTCFG'|g' ${EFI}/EFI/BOOT/grub.cfg
+  cp ${EFI}/EFI/BOOT/grub.cfg ${DST}/EFI/BOOT/grub.cfg
+
+  info "Unmounting efiboot image from ${EFI}"
+  umount $EFI/
+
+  info "Make efiboot image read-only again"
+  chmod 444 $DST/images/efiboot.img
+
+  info "Adding kickstart to isolinux boot menu"
+  ISOLINUXKICKSTARTCFG="inst.stage2=hd:LABEL=${LABEL}:/isolinux/ks.cfg"
+  sed -i 's/append\ initrd\=initrd.img/append initrd=initrd.img\ ${ISOLINUXKICKSTARTCFG}/' ${DST}/isolinux/isolinux.cfg
+
+  info "Copy kickstart file ${KICKSTART} to ${DST}/isolinux/ks.cfg"
+#  cp ${KSDIR}/minimal-generic.ks ${DST}/isolinux/ks.cfg
+  cp ${KICKSTART} ${DST}/isolinux/ks.cfg
 
   info "Generate new iso"
-  cd ${tmpDir}/customiso
-  mkisofs -o ${DESTINATIONDIR}/Custom-${NAME} -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -V "${VOLUMENAME}" -R -J  -quiet -T isolinux/. . > /dev/null
+  cd ${DST}
+  #mkisofs -o ${OUT}/Custom-${NAME} -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -V "${VOLUMENAME}" -R -J  -quiet -T isolinux/. . > /dev/null
+  genisoimage \
+      -V ${VOLUMENAME} \
+      -A ${VOLUMENAME} \
+      -o ${OUT}/Custom-${NAME} \
+      -joliet-long \
+      -b isolinux/isolinux.bin \
+      -c isolinux/boot.cat \
+      -no-emul-boot \
+      -boot-load-size 4 \
+      -boot-info-table \
+      -eltorito-alt-boot -e images/efiboot.img \
+      -no-emul-boot \
+      -R -J -v -T . > /dev/null
+
   cd ${CURDIR}
-  isohybrid ${DESTINATIONDIR}/Custom-${NAME}
-  implantisomd5 ${DESTINATIONDIR}/Custom-${NAME} > /dev/null
+  isohybrid --uefi ${OUT}/Custom-${NAME}
+  implantisomd5 ${OUT}/Custom-${NAME} > /dev/null
 
-  rm -rf ${tmpDir}
-
-  notice "Finished process for Centos ${CENTOSVERSION}."
-  echo ""
+  notice "Finished. You'll find your new customized ISO in ${3}."
 }
 
 ###############################################################################
@@ -175,7 +168,7 @@ tmpDir="/tmp/${scriptName}.$RANDOM.$RANDOM.$RANDOM.$$"
 # Logging
 # -----------------------------------
 # Log is only used when the '-l' flag is set.
-logFile="/tmp/${scriptBasename}.log"
+logFile="/tmp/${scriptName}.log"
 
 # Print help if no arguments were passed.
 # Uncomment to force arguments when invoking the script
@@ -220,44 +213,14 @@ function header()   { local _message="== ${*} ==  "; echo -e "$(_alert header)";
 function verbose()  { if ${verbose}; then debug "$@"; fi }
 
 ###############################################################################
-# Argument parsing
-###############################################################################
-while [[ $1 = -?* ]]; do
-   case $1 in
-    -7) cversion=7 ;;
-    -8) cversion=8 ;;
-    -0) cversion=8-stream ;;
-    -a) cversion=all ;;
-    -h) usage ;;
-    -d) debug=true ;;
-    -v) verbose=true ;;
-    -q) quiet=true ;;
-    -a) strict=true ;;
-    -l) printLog=true ;;
-    -z) echo "$(basename $0) ${version}"; safeExit ;;
-    *) die "invalid option: '$1'." ;;
-   esac
-   shift
-done
-
-###############################################################################
 # echo usage message
 ###############################################################################
 function usage () {
-   [[ -n ${DEBUG} ]] && set -x
-   echo "Usage: ${0##*/}"
-   echo "     -7 : Create ISO for CentOS Version 7"
-   echo "     -8 : Create ISO for CentOS Version 8"
-   echo "     -0 : Create ISO for CentOS Version 8-stream"
-   echo "     -a : Create ISO for all three versions"
-   echo "     -l : Print log to file"
-   echo "     -q : Quiet (no output)"
-   echo "     -s : Exit script with null variables.  i.e 'set -o nounset'"
-   echo "     -v : Output more information. (Items echoed to 'verbose')"
-   echo "     -d : Runs script in BASH debug mode (set -x)"
-   echo "     -h : Display this help and exit"
-   echo "     -h : display this help message"
-   echo "     -z : display version and exit"
+   echo "Usage: ${0##*/} ISO KICKSTART DESTINATION"
+   echo ""
+   echo "          ISO : The downloaded ISO file"
+   echo "    Kickstart : The kickstart file to use"
+   echo "  Destination : Where to save the new custom ISO image"
    exit 1
 }
 
@@ -288,7 +251,7 @@ function set_log () {
 # check for free space in Filesystem
 ###############################################################################
 function checkfree () {
-   fs=$1
+   fs=${1}
    typeset -i actfree=0
    actfree=$(df -k ${fs} | tail -1 | awk '{print $4}')
    if (( actfree > minfree ))
@@ -297,17 +260,6 @@ function checkfree () {
    else
     die "not enough free disk space in ${fs}"
    fi
-}
-
-###############################################################################
-# Check if root startet this script
-###############################################################################
-function checkroot () {
-    [[ -n ${DEBUG} ]] && set -x
-    id | /bin/grep '^[^=]*=0(' >/dev/null 2>&1
-    if [ $? != 0 ]; then
-        die "Only root can use this Script (uid=0)"
-    fi
 }
 
 ###############################################################################
@@ -324,16 +276,6 @@ IFS=$' \n\t'
 # Exit on error. Append '||true' when you run the script if you expect an error.
 ###############################################################################
 set -o errexit
-
-###############################################################################
-# Run in debug mode, if set
-###############################################################################
-if ${debug}; then set -x ; fi
-
-###############################################################################
-# Exit on empty variable
-###############################################################################
-if ${strict}; then set -o nounset ; fi
 
 ###############################################################################
 # Bash will remember & return the highest exitcode in a chain of pipes.
