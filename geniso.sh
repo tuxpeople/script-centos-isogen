@@ -101,7 +101,7 @@ function mainScript() {
       -boot-info-table \
       -eltorito-alt-boot -e images/efiboot.img \
       -no-emul-boot \
-      -R -J -v -T . .
+      -R -J -v -T ${DST}
 
   cd ${CURDIR}
   isohybrid --uefi ${OUT}/Custom-${NAME}
