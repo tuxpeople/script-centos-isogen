@@ -100,7 +100,7 @@ function mainScript() {
       -boot-load-size 4 \
       -boot-info-table \
       -eltorito-alt-boot -e images/efiboot.img \
-      -R -J -v -T ${DST}
+      -R -J -vv -T ${DST}
 
   cd ${CURDIR}
   isohybrid --uefi ${OUT}/Custom-${NAME}
