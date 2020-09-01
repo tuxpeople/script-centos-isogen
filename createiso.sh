@@ -81,8 +81,9 @@ function mainScript() {
   chmod 444 $DST/images/efiboot.img
 
   info "Adding kickstart to isolinux boot menu"
-  ISOLINUXKICKSTARTCFG="inst.stage2=hd:LABEL=${LABEL}:/isolinux/ks.cfg"
-  sed -i 's|append initrd=initrd.img|append initrd=initrd.img '${ISOLINUXKICKSTARTCFG}'|' ${DST}/isolinux/isolinux.cfg
+  #ISOLINUXKICKSTARTCFG="inst.stage2=hd:LABEL=${LABEL}:/isolinux/ks.cfg"
+  #sed -i 's|append initrd=initrd.img|append initrd=initrd.img '${ISOLINUXKICKSTARTCFG}'|' ${DST}/isolinux/isolinux.cfg
+  sed -i 's|append initrd=initrd.img|append initrd=initrd.img ks=cdrom:/isolinux/ks.cfg|' ${DST}/isolinux/isolinux.cfg
 
   info "Copy kickstart file ${KICKSTART} to ${DST}/isolinux/ks.cfg"
 #  cp ${KSDIR}/minimal-generic.ks ${DST}/isolinux/ks.cfg
