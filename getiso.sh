@@ -1,4 +1,4 @@
-!/usr/bin/env bash
+#!/usr/bin/env bash
 
 version="1.0.0"   # Version of this script
 OUT="/root/seafile/sync"
