@@ -42,6 +42,7 @@ function get_iso () {
   info "Now calling createiso.sh to create custom iso out of it"
   ${MYDIR}/createiso.sh ${tmpDir}/${NAME} ${MYDIR}/ks/minimal-${CENTOSVERSION}.ks.cfg ${OUT}
 
+  rm ${tmpDir}/${NAME}
   cd ${CURDIR}
 }
 
