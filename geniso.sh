@@ -89,19 +89,7 @@ function mainScript() {
   info "Generate new iso"
   cd ${DST}
   #mkisofs -o ${OUT}/Custom-${NAME} -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -V "${VOLUMENAME}" -R -J  -quiet -T isolinux/. . > /dev/null
-  genisoimage \
-      -V ${VOLUMENAME} \
-      -A ${VOLUMENAME} \
-      -o ${OUT}/Custom-${NAME} \
-      -joliet-long \
-      -b isolinux.bin \
-      -c boot.cat \
-      -no-emul-boot \
-      -boot-load-size 4 \
-      -boot-info-table \
-      -eltorito-alt-boot -e images/efiboot.img \
-      -no-emul-boot \
-      -R -J -v -T .
+  genisoimage -V ${VOLUMENAME} -A ${VOLUMENAME} -o ${OUT}/Custom-${NAME} -joliet-long -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e images/efiboot.img -no-emul-boot -R -J -v -T {DST}
 
   cd ${CURDIR}
   isohybrid --uefi ${OUT}/Custom-${NAME}
