@@ -101,6 +101,7 @@ function mainScript() {
       -boot-info-table \
       -input-charset UTF8 \
       -eltorito-alt-boot -e images/efiboot.img \
+      -no-emul-boot \
       -R -J -T ${DST} > /dev/null
 
   cd ${CURDIR}
