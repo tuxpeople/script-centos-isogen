@@ -99,8 +99,7 @@ function mainScript() {
       -no-emul-boot \
       -boot-load-size 4 \
       -boot-info-table \
-     # -eltorito-alt-boot -e images/efiboot.img \
-      -no-emul-boot \
+      -eltorito-alt-boot -e images/efiboot.img \
       -R -J -v -T ${DST}
 
   cd ${CURDIR}
