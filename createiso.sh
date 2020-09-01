@@ -41,6 +41,7 @@ function mainScript() {
   DST=${tmpDir}/customiso
   EFI=${tmpDir}/efi
   NAME=$(basename $1)
+  MYDIR=`dirname "$(realpath $0)"`
 
   info "Creating directory ${SRC}"
   mkdir ${SRC}
