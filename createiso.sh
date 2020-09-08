@@ -93,7 +93,7 @@ function mainScript() {
   info "Generate new iso"
   cd ${DST}
   #mkisofs -o ${OUT}/Custom-${NAME} -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -V "${VOLUMENAME}" -R -J  -quiet -T isolinux/. . > /dev/null
-  genisoimage \
+  xorriso -as mkisofs \
       -V "${VOLUMENAME}" \
       -A "${VOLUMENAME}" \
       -o ${OUT}/Custom-${NAME} \
