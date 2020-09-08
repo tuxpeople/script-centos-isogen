@@ -33,8 +33,7 @@ function mainScript() {
   CURDIR=`pwd`
   cd ${tmpDir}
 
-  VOLUME_LINE=`isoinfo -d -i "$1" | grep -i "Volume id:"`
-  VOLUMENAME=${VOLUME_LINE:11}
+  VOLUMENAME=$(file -s ${1} | cut -d"'" -f2)
   UPSTREAMISO=${1}
   KICKSTART=${2}
   OUT=${3}
@@ -93,7 +92,7 @@ function mainScript() {
   info "Generate new iso"
   cd ${DST}
   #mkisofs -o ${OUT}/Custom-${NAME} -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -V "${VOLUMENAME}" -R -J  -quiet -T isolinux/. . > /dev/null
-  xorriso -as mkisofs \
+  genisoimage \
       -V "${VOLUMENAME}" \
       -A "${VOLUMENAME}" \
       -o ${OUT}/Custom-${NAME} \
@@ -106,7 +105,7 @@ function mainScript() {
       -input-charset UTF8 \
       -eltorito-alt-boot -e images/efiboot.img \
       -no-emul-boot \
-      -R -J -T ${DST} > /dev/null
+      -R -J -q -T ${DST} > /dev/null
 
   cd ${CURDIR}
   isohybrid --uefi ${OUT}/Custom-${NAME}
@@ -154,7 +153,6 @@ strict=false
 debug=false
 args=()
 
-if [[ $- == *i* ]]; then
 # Set Colors
 bold=$(tput bold)
 reset=$(tput sgr0)
@@ -164,7 +162,6 @@ green=$(tput setaf 76)
 tan=$(tput setaf 3)
 blue=$(tput setaf 38)
 underline=$(tput sgr 0 1)
-fi
 
 # Set Temp Directory
 tmpDir="/tmp/${scriptName}.$RANDOM.$RANDOM.$RANDOM.$$"
