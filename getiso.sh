@@ -107,6 +107,7 @@ strict=false
 debug=false
 args=()
 
+if [[ $- == *i* ]]; then
 # Set Colors
 bold=$(tput bold)
 reset=$(tput sgr0)
@@ -116,6 +117,7 @@ green=$(tput setaf 76)
 tan=$(tput setaf 3)
 blue=$(tput setaf 38)
 underline=$(tput sgr 0 1)
+fi
 
 # Set Temp Directory
 tmpDir="/tmp/${scriptName}.$RANDOM.$RANDOM.$RANDOM.$$"
