@@ -106,7 +106,7 @@ function mainScript() {
       -input-charset UTF8 \
       -eltorito-alt-boot -e images/efiboot.img \
       -no-emul-boot \
-      -R -J -q -T ${DST} > /dev/null
+      -R -J -T ${DST} > /dev/null
 
   cd ${CURDIR}
   isohybrid --uefi ${OUT}/Custom-${NAME}
