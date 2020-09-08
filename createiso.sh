@@ -33,7 +33,8 @@ function mainScript() {
   CURDIR=`pwd`
   cd ${tmpDir}
 
-  VOLUMENAME=$(file -s ${1} | cut -d"'" -f2)
+  VOLUME_LINE=`isoinfo -d -i "$1" | grep -i "Volume id:"`
+  VOLUMENAME=${VOLUME_LINE:11}
   UPSTREAMISO=${1}
   KICKSTART=${2}
   OUT=${3}
